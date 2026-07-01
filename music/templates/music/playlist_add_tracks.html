@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .search-header { margin-bottom: 30px; border-bottom: 1px solid #282828; padding-bottom: 20px; }
+    
+    .search-bar { display: flex; gap: 10px; margin-bottom: 30px; }
+    .search-bar input {
+        flex: 1;
+        padding: 15px 20px;
+        background: var(--bg-panel);
+        border: 1px solid #333;
+        color: white;
+        border-radius: 50px;
+        outline: none;
+        font-size: 16px;
+    }
+    .search-bar input:focus { border-color: var(--accent-color); }
+    
+    .track-list { list-style: none; padding: 0; }
+    .track-item {
+        background: var(--bg-panel);
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .track-details strong { display: block; font-size: 16px; margin-bottom: 4px; }
+    .track-details span { color: var(--text-muted); font-size: 14px; }
+    
+    .btn-add {
+        background-color: transparent;
+        color: var(--text-main);
+        border: 1px solid #fff;
+        padding: 6px 16px;
+        border-radius: 50px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+    }
+    .btn-add:hover { background-color: white; color: black; }
+</style>
+
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="search-header">
+        <a href="{% url 'playlist_detail' playlist.id %}" style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px; display: inline-block;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Playlist
+        </a>
+        <h1>Add tracks to {{ playlist.title }}</h1>
+    </div>
+
+    <form method="GET" class="search-bar">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search for songs or artists..." autofocus>
+        <button type="submit" class="btn-primary" style="padding: 0 30px;">Search</button>
+    </form>
+
+    <ul class="track-list">
+        {% for song in songs %}
+            <li class="track-item">
+                <div class="track-details">
+                    <strong>{{ song.title }}</strong>
+                    <span>{{ song.artist }} &bull; {{ song.genre }}</span>
+                </div>
+                
+                <form action="{% url 'quick_add_to_playlist' playlist.id song.id %}" method="POST">
+                    {% csrf_token %}
+                    {% if song in playlist.songs.all %}
+                        <button type="button" class="btn-add" style="opacity: 0.5; cursor: not-allowed;" disabled>Added</button>
+                    {% else %}
+                        <button type="submit" class="btn-add"><i class="fa-solid fa-plus"></i> Add</button>
+                    {% endif %}
+                </form>
+            </li>
+        {% empty %}
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <i class="fa-solid fa-magnifying-glass" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i>
+                <h3>No songs found</h3>
+                <p>Try searching for a different title or artist.</p>
+            </div>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

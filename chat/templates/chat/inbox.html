@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h2>Messages</h2>
+    <p style="color: var(--text-muted);">Select a friend to start chatting</p>
+    
+    <div style="margin-top: 20px;">
+        {% for profile in following %}
+            <a href="{% url 'chat_room' profile.user.username %}">
+                <div style="background: var(--bg-panel); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+                    <img src="{{ profile.avatar.url }}" style="width: 40px; height: 40px; border-radius: 50%;">
+                    <strong>{{ profile.user.username }}</strong>
+                </div>
+            </a>
+        {% empty %}
+            <p>You aren't following anyone yet to chat with.</p>
+        {% endfor %}
+        
+        <hr style="border-color: #333; margin: 30px 0;">
+        <h3>Groups</h3>
+        <a href="{% url 'chat_room' 'global_music_lounge' %}">
+            <div style="background: var(--bg-panel); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
+                <strong><i class="fa-solid fa-earth-americas"></i> Global Music Lounge</strong>
+            </div>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioNet</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-base: #000000;
+            --bg-panel: #121212;
+            --bg-hover: #282828;
+            --text-main: #FFFFFF;
+            --text-muted: #B3B3B3;
+            --accent-color: #1DB954; 
+            --border-radius: 8px;
+        }
+
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-base); color: var(--text-main); }
+        a { text-decoration: none; color: inherit; }
+        
+        /* Buttons */
+        .btn-primary { background-color: var(--accent-color); color: black; border: none; padding: 10px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .btn-primary:hover { transform: scale(1.05); }
+        .btn-outline { background-color: transparent; color: var(--text-main); border: 1px solid var(--text-muted); padding: 10px 24px; border-radius: 50px; font-weight: bold; cursor: pointer; transition: border-color 0.2s; }
+        .btn-outline:hover { border-color: white; }
+
+        /* Sidebar */
+        .sidebar { width: 250px; background-color: var(--bg-base); position: fixed; top: 0; left: 0; height: 100vh; padding: 24px; box-sizing: border-box; border-right: 1px solid #282828; display: flex; flex-direction: column;}
+        .logo { font-size: 24px; font-weight: 900; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        .nav-links { list-style: none; padding: 0; margin: 0; flex: 1;}
+        .nav-links li { margin-bottom: 15px; }
+        .nav-links a { display: flex; align-items: center; gap: 15px; font-size: 16px; font-weight: bold; color: var(--text-muted); transition: color 0.2s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+        .nav-links i { font-size: 20px; width: 25px;}
+        .sidebar-bottom { border-top: 1px solid #282828; padding-top: 20px; }
+
+        /* ========================================= */
+        /* NEW: FLOATING PLAYER STYLES               */
+        /* ========================================= */
+        #global-player {
+            position: fixed;
+            /* Center it in the remaining space next to the sidebar */
+            left: 270px; 
+            right: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+            bottom: 25px; /* Floats slightly above the bottom */
+            
+            background: #181818;
+            border: 1px solid #333;
+            border-radius: 16px; /* Sleek rounded edges */
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 9999;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+
+            /* Hiding Animation Logic */
+            transform: translateY(150%);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* This class is added by Javascript when a song is played */
+        #global-player.player-active {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .notif-badge {
+            background-color: #e74c3c;
+            color: rgb(219, 81, 81);
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: auto; /* Pushes it to the right edge */
+        }
+    </style>
+</head>
+<body hx-boost="true">
+
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fa-brands fa-spotify" style="color: var(--accent-color); font-size: 32px;"></i>
+            AudioNet
+        </div>
+
+        <ul class="nav-links">
+            <li><a href="{% url 'main_feed' %}"><i class="fa-solid fa-house"></i> Home Feed</a></li>
+            <li><a href="{% url 'discover_feed' %}"><i class="fa-solid fa-compass"></i> Discover</a></li>
+            <li><a href="{% url 'global_search' %}"><i class="fa-solid fa-magnifying-glass"></i> Search Music</a></li>
+            <li><a href="{% url 'explore_users' %}"><i class="fa-solid fa-users"></i> Find Friends</a></li>
+            
+            {% if request.user.is_authenticated %}
+              <li style="margin-top: 30px;">
+                    <a href="{% url 'notification_list' %}" style="display: flex; align-items: center; padding-right: 15px;">
+                        <div><i class="fa-solid fa-bell"></i> Notifications</div>
+                        
+                        {% if unread_notif_count > 0 %}
+                            <span class="notif-badge">{{ unread_notif_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li><a href="{% url 'inbox' %}"><i class="fa-solid fa-envelope"></i> Messages</a></li>
+                <li><a href="{% url 'upload_song' %}"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Track</a></li>
+                <li><a href="{% url 'create_playlist' %}"><i class="fa-solid fa-square-plus"></i> New Playlist</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="sidebar-bottom">
+            <ul class="nav-links">
+                {% if request.user.is_authenticated %}
+                    <li><a href="{% url 'profile_view' request.user.username %}"><i class="fa-solid fa-user"></i> My Profile</a></li>
+                    <li><a href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+                {% else %}
+                    <li><a href="{% url 'login' %}"><i class="fa-solid fa-right-to-bracket"></i> Login</a></li>
+                    <li><a href="{% url 'register' %}"><i class="fa-solid fa-user-plus"></i> Register</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <main class="main-content" style="margin-left: 250px; padding: 40px; padding-bottom: 120px;">
+        {% block content %}{% endblock %}
+    </main>
+
+    <div id="global-player" hx-preserve="true">
+        
+        <div style="display: flex; align-items: center; gap: 15px; width: 25%; min-width: 150px;">
+            <div id="player-art" style="width: 50px; height: 50px; background: #282828; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--accent-color);">
+                <i class="fa-solid fa-music"></i>
+            </div>
+            <div style="overflow: hidden;">
+                <strong id="player-title" style="display: block; font-size: 14px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">No track selected</strong>
+                <span id="player-artist" style="font-size: 12px; color: var(--text-muted);">---</span>
+            </div>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; max-width: 500px; margin: 0 20px;">
+            <div style="display: flex; align-items: center; gap: 25px; margin-bottom: 8px;">
+                <button onclick="toggleShuffle()" id="btn-shuffle" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;"><i class="fa-solid fa-shuffle"></i></button>
+                <button onclick="prevTrack()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px;"><i class="fa-solid fa-backward-step"></i></button>
+                <button onclick="togglePlay()" id="btn-play" style="background: white; color: black; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-play" style="margin-left: 2px;"></i></button>
+                <button onclick="nextTrack()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px;"><i class="fa-solid fa-forward-step"></i></button>
+                <button onclick="toggleRepeat()" id="btn-repeat" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;"><i class="fa-solid fa-repeat"></i></button>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px; width: 100%; font-size: 11px; color: var(--text-muted);">
+                <span id="time-current">0:00</span>
+                <input type="range" id="progress-bar" value="0" max="100" style="flex: 1; height: 4px; border-radius: 2px; appearance: none; background: #4d4d4d; outline: none; cursor: pointer;">
+                <span id="time-total">0:00</span>
+            </div>
+        </div>
+
+        <div style="width: 25%; display: flex; justify-content: flex-end; align-items: center; gap: 10px; color: var(--text-muted); min-width: 120px;">
+            <i class="fa-solid fa-volume-high" style="margin-left: 15px;"></i>
+            <input type="range" id="volume-bar" value="100" max="100" style="width: 80px; height: 4px; border-radius: 2px; appearance: none; background: #4d4d4d; outline: none; cursor: pointer;">
+        </div>
+
+        <audio id="main-audio"></audio>
+    </div>
+
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <script>
+        const audio = document.getElementById('main-audio');
+        const playerContainer = document.getElementById('global-player'); // Get the player
+        const playBtn = document.getElementById('btn-play');
+        const progressBar = document.getElementById('progress-bar');
+        const volumeBar = document.getElementById('volume-bar');
+        
+        let queue = [];
+        let originalQueue = [];
+        let currentIndex = 0;
+        let isShuffle = false;
+        let isRepeat = false;
+
+        function playContext(btnElement) {
+            // Slide the player up onto the screen if it is hidden!
+            playerContainer.classList.add('player-active');
+
+            const context = btnElement.getAttribute('data-context');
+            const allTracks = Array.from(document.querySelectorAll(`button[data-context="${context}"]`));
+            
+            originalQueue = allTracks.map(btn => ({
+                title: btn.getAttribute('data-title'),
+                artist: btn.getAttribute('data-artist'),
+                url: btn.getAttribute('data-url')
+            }));
+
+            const clickedIndex = allTracks.indexOf(btnElement);
+            if (isShuffle) {
+                queue = [...originalQueue];
+                const selected = queue.splice(clickedIndex, 1)[0];
+                queue.sort(() => Math.random() - 0.5);
+                queue.unshift(selected);
+                currentIndex = 0;
+            } else {
+                queue = [...originalQueue];
+                currentIndex = clickedIndex;
+            }
+            
+            loadTrack();
+            audio.play();
+        }
+
+        function loadTrack() {
+            if (queue.length === 0) return;
+            const track = queue[currentIndex];
+            audio.src = track.url;
+            document.getElementById('player-title').innerText = track.title;
+            document.getElementById('player-artist').innerText = track.artist;
+            playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        }
+
+        function togglePlay() {
+            if (queue.length === 0) return;
+            if (audio.paused) { audio.play(); playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; }
+            else { audio.pause(); playBtn.innerHTML = '<i class="fa-solid fa-play" style="margin-left: 2px;"></i>'; }
+        }
+
+        function nextTrack() {
+            if (queue.length === 0) return;
+            currentIndex++;
+            if (currentIndex >= queue.length) currentIndex = 0;
+            loadTrack();
+            audio.play();
+        }
+
+        function prevTrack() {
+            if (queue.length === 0) return;
+            if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+            currentIndex--;
+            if (currentIndex < 0) currentIndex = queue.length - 1;
+            loadTrack();
+            audio.play();
+        }
+
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            document.getElementById('btn-shuffle').style.color = isShuffle ? 'var(--accent-color)' : 'var(--text-muted)';
+            if (!isShuffle && queue.length > 0) {
+                const currentTrack = queue[currentIndex];
+                queue = [...originalQueue];
+                currentIndex = queue.findIndex(t => t.url === currentTrack.url);
+            }
+        }
+
+        function toggleRepeat() {
+            isRepeat = !isRepeat;
+            document.getElementById('btn-repeat').style.color = isRepeat ? 'var(--accent-color)' : 'var(--text-muted)';
+            audio.loop = isRepeat; 
+        }
+
+        audio.addEventListener('ended', () => { if (!isRepeat) nextTrack(); });
+        
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const progressPercent = (audio.currentTime / audio.duration) * 100;
+                progressBar.value = progressPercent;
+                document.getElementById('time-current').innerText = formatTime(audio.currentTime);
+                document.getElementById('time-total').innerText = formatTime(audio.duration);
+            }
+        });
+
+        progressBar.addEventListener('input', (e) => {
+            const seekTime = (e.target.value / 100) * audio.duration;
+            audio.currentTime = seekTime;
+        });
+
+        volumeBar.addEventListener('input', (e) => {
+            audio.volume = e.target.value / 100;
+        });
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2><i class="fa-solid fa-cloud-arrow-up"></i> Upload a Track</h2>
+    <hr style="border-color: #282828; margin-bottom: 20px;">
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%;">
+            Publish Track
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .feed-header { margin-bottom: 30px; }
+    .post-creator { background: var(--bg-panel); padding: 20px; border-radius: var(--border-radius); margin-bottom: 30px; }
+    .post-creator textarea { width: 100%; background: var(--bg-base); border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; resize: none; outline: none;}
+    .post-creator textarea:focus { border-color: var(--accent-color); }
+    
+    .post-card { background: var(--bg-panel); padding: 20px; border-radius: var(--border-radius); margin-bottom: 20px; }
+    .post-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+    .post-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .post-content { line-height: 1.5; margin-bottom: 15px; }
+    
+    .audio-attachment { background: #000; padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 15px;}
+    .playlist-attachment { background: #000; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db; margin-top: 15px; }
+    
+    .interaction-bar { display: flex; gap: 20px; border-top: 1px solid #333; padding-top: 15px; margin-top: 15px;}
+    .action-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;}
+    .action-btn:hover { color: var(--accent-color); }
+    
+    .comment-section { margin-top: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; }
+</style>
+
+<div style="max-width: 680px; margin: 0 auto;">
+    
+    <div class="feed-header">
+        <h1>{{ feed_type }}</h1>
+    </div>
+
+    {% if form %}
+    <div class="post-creator">
+        <form method="POST">
+            {% csrf_token %}
+            {{ form.content }}
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="color: var(--text-muted); font-size: 12px;">
+                    Attach Music: {{ form.attached_song }}
+                </div>
+                <button type="submit" class="btn-primary">Post</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    {% for post in posts %}
+    <div class="post-card">
+        <div class="post-header">
+            {% if post.author.profile.avatar %}
+                <img src="{{ post.author.profile.avatar.url }}" class="post-avatar">
+            {% else %}
+                <img src="https://via.placeholder.com/40/282828/FFFFFF?text={{ post.author.username|make_list|first|upper }}" class="post-avatar">
+            {% endif %}
+            <div>
+                <a href="{% url 'profile_view' post.author.username %}" style="font-weight: bold;">{{ post.author.username }}</a>
+                <div style="font-size: 12px; color: var(--text-muted);">{{ post.created_at|timesince }} ago</div>
+            </div>
+        </div>
+
+        <div class="post-content">
+            {{ post.content }}
+            
+            {% if post.attached_song %}
+            <div class="audio-attachment" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong><i class="fa-solid fa-music"></i> <a href="{% url 'song_detail' post.attached_song.id %}" style="color: white; text-decoration: underline;">{{ post.attached_song.title }}</a></strong> 
+                    <br><span style="font-size: 13px; color: var(--text-muted);">by {{ post.attached_song.artist }}</span>
+                    
+                    {% if request.user.is_authenticated and request.user.playlists.exists %}
+                    <form action="{% url 'add_to_playlist' post.attached_song.id %}" method="POST" style="display: flex; gap: 10px; margin-top: 10px;">
+                        {% csrf_token %}
+                        <select name="playlist_id" required style="padding: 6px; background: #222; color: white; border: 1px solid #444; border-radius: 4px; outline: none; font-size: 12px;">
+                            <option value="" disabled selected>Save to playlist...</option>
+                            {% for playlist in request.user.playlists.all %}
+                                <option value="{{ playlist.id }}">{{ playlist.title }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn-outline" style="padding: 6px 12px; font-size: 12px;">Add</button>
+                    </form>
+                    {% endif %}
+                </div>
+                
+                <button class="btn-primary" 
+                        style="padding: 10px 20px; border-radius: 50px;"
+                        data-context="feed"
+                        data-title="{{ post.attached_song.title }}"
+                        data-artist="{{ post.attached_song.artist }}"
+                        data-url="{{ post.attached_song.audio_file.url }}"
+                        onclick="playContext(this)">
+                    <i class="fa-solid fa-play"></i> Play
+                </button>
+            </div>
+            {% endif %}
+
+            {% if post.attached_playlist %}
+            <div class="playlist-attachment">
+                <strong><i class="fa-solid fa-list"></i> {{ post.attached_playlist.title }}</strong>
+                <p style="color: var(--text-muted); font-size: 13px; margin: 5px 0 10px 0;">{{ post.attached_playlist.songs.count }} Tracks</p>
+                <a href="{% url 'playlist_detail' post.attached_playlist.id %}" class="btn-outline" style="padding: 6px 16px; font-size: 12px;">View Playlist</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="interaction-bar">
+            <form action="{% url 'toggle_like' post.id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="action-btn">
+                    <i class="fa-solid fa-heart"></i> {{ post.likes.count }} Likes
+                </button>
+            </form>
+            
+            <button class="action-btn" onclick="document.getElementById('comments-{{ post.id }}').style.display='block'">
+                <i class="fa-solid fa-comment"></i> {{ post.comments.count }} Comments
+            </button>
+
+            <button class="action-btn" data-url="{% url 'main_feed' %}" onclick="navigator.clipboard.writeText(window.location.origin + this.getAttribute('data-url')); alert('Feed link copied to clipboard!');">
+                <i class="fa-solid fa-share-nodes"></i> Share
+            </button>
+            
+            <a href="{% url 'share_to_chat' 'post' post.id %}" style="text-decoration: none;">
+                <button type="button" class="action-btn">
+                    <i class="fa-regular fa-paper-plane"></i> Send
+                </button>
+            </a>
+        </div>
+
+        <div id="comments-{{ post.id }}" class="comment-section" style="display: none;">
+            {% for comment in post.comments.all %}
+                <div style="margin-bottom: 10px; font-size: 14px;">
+                    <strong>{{ comment.author.username }}:</strong> {{ comment.text }}
+                </div>
+            {% endfor %}
+            <form action="{% url 'add_comment' post.id %}" method="POST" style="margin-top: 10px; display: flex; gap: 10px;">
+                {% csrf_token %}
+                <input type="text" name="text" placeholder="Write a comment..." style="flex: 1; padding: 8px; border-radius: 4px; border: none; background: #333; color: white; outline: none;">
+                <button type="submit" class="btn-primary" style="padding: 8px 16px;">Send</button>
+            </form>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+        <i class="fa-solid fa-ghost" style="font-size: 40px; margin-bottom: 15px;"></i>
+        <p>No posts to show here yet.</p>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}

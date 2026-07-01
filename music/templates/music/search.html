@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .search-header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+    .search-header h1 { font-size: 36px; margin-bottom: 20px; }
+    
+    .main-search-bar { display: flex; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 50px;}
+    .main-search-bar input {
+        flex: 1;
+        padding: 16px 24px;
+        background: var(--bg-panel);
+        border: 2px solid #333;
+        border-right: none;
+        color: white;
+        border-radius: 50px 0 0 50px;
+        outline: none;
+        font-size: 16px;
+    }
+    .main-search-bar input:focus { border-color: var(--accent-color); }
+    .main-search-bar button {
+        padding: 16px 32px;
+        background: var(--accent-color);
+        color: black;
+        border: none;
+        border-radius: 0 50px 50px 0;
+        font-weight: bold;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    
+    .results-container { max-width: 800px; margin: 0 auto; }
+    .result-item {
+        background: var(--bg-panel);
+        padding: 20px;
+        border-radius: var(--border-radius);
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+    .result-item:hover { background: var(--bg-hover); }
+    .result-info strong { display: block; font-size: 18px; margin-bottom: 6px; }
+    .result-info span { color: var(--text-muted); font-size: 14px; }
+    .result-info a { color: var(--accent-color); font-weight: bold; }
+</style>
+
+<div class="search-header">
+    <h1><i class="fa-solid fa-magnifying-glass" style="color: var(--accent-color);"></i> Search AudioNet</h1>
+    
+    <form method="GET" class="main-search-bar">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search for tracks, artists, or genres..." autofocus>
+        <button type="submit">Search</button>
+    </form>
+</div>
+
+<div class="results-container">
+    {% if query %}
+        <h3 style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">Results for "{{ query }}"</h3>
+        
+        <ul style="list-style: none; padding: 0;">
+            {% for song in songs %}
+                <li class="result-item">
+                    <div class="result-info">
+                        <strong>{{ song.title }}</strong>
+                        <span>{{ song.artist }} &bull; Uploaded by <a href="{% url 'profile_view' song.uploader.username %}">{{ song.uploader.username }}</a></span>
+                    </div>
+                    
+                    <a href="{% url 'song_detail' song.id %}">
+                        <button class="btn-outline" style="padding: 10px 30px;">
+                            <i class="fa-solid fa-play"></i> Play
+                        </button>
+                    </a>
+                </li>
+            {% empty %}
+                <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+                    <i class="fa-solid fa-compact-disc" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
+                    <h3>No tracks found</h3>
+                    <p>We couldn't find any matches for "{{ query }}".</p>
+                </div>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+{% endblock %}

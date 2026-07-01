@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .edit-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: var(--bg-panel);
+        padding: 40px;
+        border-radius: var(--border-radius);
+    }
+    .edit-container h2 { margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+    .edit-form { display: flex; flex-direction: column; gap: 20px; }
+    .edit-form p { display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); font-size: 14px; }
+    
+    .edit-form input[type="text"], 
+    .edit-form textarea {
+        width: 100%;
+        padding: 12px;
+        background: var(--bg-base);
+        border: 1px solid #333;
+        color: var(--text-main);
+        border-radius: 6px;
+        outline: none;
+        font-family: inherit;
+    }
+    .edit-form textarea { resize: vertical; min-height: 100px; }
+    .edit-form input:focus, .edit-form textarea:focus { border-color: var(--accent-color); }
+    
+    .edit-form input[type="file"] {
+        background: transparent;
+        border: none;
+        padding: 0;
+        color: var(--text-main);
+    }
+</style>
+
+<div class="edit-container">
+    <h2><i class="fa-solid fa-pen-to-square"></i> Edit Your Profile</h2>
+    
+    <form method="post" enctype="multipart/form-data" class="edit-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <div style="display: flex; gap: 15px; margin-top: 20px;">
+            <button type="submit" class="btn-primary">Save Changes</button>
+            <a href="{% url 'profile_view' request.user.username %}" class="btn-outline" style="text-align: center; text-decoration: none;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

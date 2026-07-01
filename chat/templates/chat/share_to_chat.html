@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .share-container { max-width: 500px; margin: 60px auto; background: var(--bg-panel); padding: 40px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .share-header { margin-bottom: 25px; font-size: 24px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 15px; }
+    
+    .share-form p { color: var(--text-muted); margin-bottom: 15px; font-size: 14px; }
+    .share-form select {
+        width: 100%;
+        padding: 12px;
+        background: #000;
+        color: white;
+        border: 1px solid #333;
+        border-radius: 6px;
+        margin-bottom: 25px;
+        outline: none;
+        font-size: 16px;
+    }
+    .share-form select:focus { border-color: var(--accent-color); }
+    
+    .msg-preview { background: rgba(29, 185, 84, 0.1); padding: 15px; border-radius: 6px; border-left: 3px solid var(--accent-color); margin-bottom: 25px; font-style: italic; font-size: 14px; }
+</style>
+
+<div class="share-container">
+    <div class="share-header"><i class="fa-regular fa-paper-plane" style="color: var(--accent-color);"></i> Send in Message</div>
+    
+    <div class="msg-preview">
+        "Hey! Check out {{ item_title }}..."
+    </div>
+
+    <form method="POST" class="share-form">
+        {% csrf_token %}
+        <p>Select a friend to send this to:</p>
+        <!-- Allow them to type an optional message to go with the song -->
+        <input type="text" name="content" placeholder="Add an optional message..." style="width: 100%; padding: 12px; background: #000; color: white; border: 1px solid #333; border-radius: 6px; margin-bottom: 15px; outline: none; font-size: 14px;">
+        <select name="recipient" required>
+            <option value="" disabled selected>Choose a friend...</option>
+            {% for profile in following %}
+                <option value="{{ profile.user.username }}">{{ profile.user.username }}</option>
+            {% empty %}
+                <option value="" disabled>You aren't following anyone yet!</option>
+            {% endfor %}
+        </select>
+        
+        <div style="display: flex; gap: 15px;">
+            <a href="javascript:history.back()" class="btn-outline" style="text-decoration: none; padding: 12px 24px; text-align: center; flex: 1;">Cancel</a>
+            <button type="submit" class="btn-primary" style="flex: 1;">Send Message</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

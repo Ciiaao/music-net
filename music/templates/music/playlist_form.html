@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .form-container {
+        max-width: 500px;
+        margin: 60px auto;
+        background: var(--bg-panel);
+        padding: 40px;
+        border-radius: var(--border-radius);
+    }
+    .form-container h2 { margin-bottom: 25px; }
+    
+    .standard-form { display: flex; flex-direction: column; gap: 20px; }
+    .standard-form p { display: flex; flex-direction: column; gap: 8px; color: var(--text-muted); }
+    
+    .standard-form input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        background: var(--bg-base);
+        border: 1px solid #333;
+        color: var(--text-main);
+        border-radius: 6px;
+        outline: none;
+    }
+    .standard-form input:focus { border-color: var(--accent-color); }
+</style>
+
+<div class="form-container">
+    <h2><i class="fa-solid fa-list-ul" style="color: var(--accent-color);"></i> Create Playlist</h2>
+    
+    <form method="post" class="standard-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <button type="submit" class="btn-primary" style="margin-top: 10px;">Create Playlist</button>
+    </form>
+</div>
+{% endblock %}

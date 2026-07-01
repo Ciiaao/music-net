@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .auth-container {
+        max-width: 400px;
+        margin: 60px auto;
+        background: var(--bg-panel);
+        padding: 40px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        text-align: center;
+    }
+    .auth-container h2 { margin-bottom: 25px; font-size: 28px; }
+    .auth-form { display: flex; flex-direction: column; gap: 15px; text-align: left; }
+    .auth-form p { display: flex; flex-direction: column; gap: 5px; }
+    .auth-form input {
+        width: 100%;
+        padding: 12px;
+        background: var(--bg-base);
+        border: 1px solid #333;
+        color: var(--text-main);
+        border-radius: 6px;
+        outline: none;
+    }
+    .auth-form input:focus { border-color: var(--accent-color); }
+    .auth-footer { margin-top: 25px; color: var(--text-muted); font-size: 14px; }
+    .auth-footer a { color: var(--accent-color); font-weight: bold; }
+</style>
+
+<div class="auth-container">
+    <h2><i class="fa-solid fa-right-to-bracket" style="color: var(--accent-color);"></i> Welcome Back</h2>
+    
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-primary" style="margin-top: 10px; width: 100%;">Log In</button>
+    </form>
+    
+    <div class="auth-footer">
+        Don't have an account? <a href="{% url 'register' %}">Sign up here</a>
+    </div>
+</div>
+{% endblock %}

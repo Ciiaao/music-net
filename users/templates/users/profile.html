@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Profile Header CSS */
+    .profile-header {
+        display: flex;
+        align-items: flex-end;
+        gap: 30px;
+        padding-bottom: 30px;
+        border-bottom: 1px solid #282828;
+    }
+    .profile-avatar {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .profile-info { flex: 1; }
+    .profile-info h4 { font-weight: 400; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;}
+    .profile-info h1 { font-size: 72px; font-weight: 900; margin-bottom: 12px; line-height: 1; }
+    
+    .profile-stats {
+        display: flex;
+        gap: 20px;
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    .profile-stats span { color: var(--text-main); font-weight: bold; }
+    .profile-actions { display: flex; gap: 16px; margin-top: 20px; }
+    
+    /* Bio CSS */
+    .profile-details { margin-top: 30px; line-height: 1.6; color: var(--text-muted); max-width: 600px; margin-bottom: 40px;}
+    .tag-container { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+    .genre-tag { background: rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 20px; font-size: 13px; color: var(--text-main); }
+    
+    /* NEW: Music & Playlist CSS */
+    .section-title { margin-bottom: 20px; font-size: 24px; border-bottom: 1px solid #282828; padding-bottom: 10px; }
+    
+    .music-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .music-item {
+        background: var(--bg-panel);
+        padding: 15px 20px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+    .music-item:hover { background: var(--bg-hover); }
+    .music-info strong { display: block; font-size: 16px; margin-bottom: 4px; }
+    .music-info span { color: var(--text-muted); font-size: 14px; }
+    
+    .playlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+    .playlist-card {
+        background: var(--bg-panel);
+        padding: 20px;
+        border-radius: var(--border-radius);
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .playlist-card:hover { transform: translateY(-5px); background: var(--bg-hover); }
+    .playlist-card i { font-size: 40px; color: var(--accent-color); margin-bottom: 15px; }
+    .playlist-card h3 { font-size: 18px; margin-bottom: 5px; }
+    .playlist-card p { color: var(--text-muted); font-size: 13px; }
+</style>
+
+<div class="profile-header">
+    {% if profile.avatar %}
+        <img src="{{ profile.avatar.url }}" alt="{{ target_user.username }}" class="profile-avatar">
+    {% else %}
+        <img src="https://via.placeholder.com/180/282828/FFFFFF?text={{ target_user.username|make_list|first|upper }}" alt="Default" class="profile-avatar">
+    {% endif %}
+    
+    <div class="profile-info">
+        <h4>User Profile</h4>
+        <h1>{{ target_user.username }}</h1>
+        
+        <div class="profile-stats">
+            <div><span>{{ profile.followers.count }}</span> Followers</div>
+            <div><span>{{ profile.following.count }}</span> Following</div>
+            <div><span>{{ playlists.count }}</span> Playlists</div>
+        </div>
+
+        <div class="profile-actions">
+            {% if request.user.is_authenticated and request.user != target_user %}
+                <form action="{% url 'toggle_follow' target_user.username %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="{% if is_following %}btn-outline{% else %}btn-primary{% endif %}">
+                        {% if is_following %} Following {% else %} Follow {% endif %}
+                    </button>
+                </form>
+            {% elif request.user == target_user %}
+                <a href="{% url 'edit_profile' %}">
+                    <button class="btn-outline">Edit Profile</button>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="profile-details">
+    <h3>About</h3>
+    <p>{{ profile.bio|default:"This user hasn't written a bio yet." }}</p>
+    
+    {% if profile.music_interests %}
+    <div class="tag-container">
+        <span class="genre-tag"><i class="fa-solid fa-headphones"></i> Top Genres:</span>
+        <span class="genre-tag">{{ profile.music_interests }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<h2 class="section-title"><i class="fa-solid fa-music"></i> Uploaded Tracks</h2>
+<ul class="music-list" style="margin-bottom: 40px;">
+    {% for song in songs %}
+        <li class="music-item">
+            <div class="music-info">
+                <strong>{{ song.title }}</strong>
+                <span>{{ song.artist }} &bull; {{ song.genre }}</span>
+            </div>
+            <a href="{% url 'song_detail' song.id %}">
+                <button class="btn-outline" style="padding: 8px 24px;">Play</button>
+            </a>
+        </li>
+    {% empty %}
+        <p style="color: var(--text-muted);">This user hasn't uploaded any tracks yet.</p>
+    {% endfor %}
+</ul>
+
+<h2 class="section-title"><i class="fa-solid fa-list-ul"></i> Public Playlists</h2>
+<div class="playlist-grid">
+    {% for playlist in playlists %}
+        <a href="{% url 'playlist_detail' playlist.id %}">
+            <div class="playlist-card">
+                <i class="fa-solid fa-record-vinyl"></i>
+                <h3>{{ playlist.title }}</h3>
+                <p>{{ playlist.songs.count }} Tracks</p>
+                {% if not playlist.is_public %}
+                    <p style="color: #e74c3c; font-size: 11px; margin-top: 5px;"><i class="fa-solid fa-lock"></i> Private</p>
+                {% endif %}
+            </div>
+        </a>
+    {% empty %}
+        <p style="color: var(--text-muted);">No playlists created yet.</p>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .player-card {
+        background: var(--bg-panel);
+        padding: 50px;
+        border-radius: var(--border-radius);
+        text-align: center;
+        max-width: 600px;
+        margin: 40px auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .track-icon { font-size: 64px; color: var(--accent-color); margin-bottom: 20px; }
+    .track-title { font-size: 32px; font-weight: 900; margin-bottom: 10px; }
+    .track-artist { color: var(--text-muted); font-size: 18px; margin-bottom: 30px; }
+    
+    .tag-container { margin-bottom: 30px; }
+    .tag { background: #282828; padding: 6px 14px; border-radius: 20px; font-size: 13px; margin: 0 5px; color: var(--text-main); }
+    
+    .uploader-info { margin-top: 40px; font-size: 14px; color: var(--text-muted); border-top: 1px solid #333; padding-top: 20px;}
+    .uploader-info a { color: var(--accent-color); font-weight: bold; }
+</style>
+
+<div class="player-card">
+    <div class="track-icon">
+        <i class="fa-solid fa-compact-disc fa-spin" style="--fa-animation-duration: 4s;"></i>
+    </div>
+    
+    <div class="track-title">{{ song.title }}</div>
+    <div class="track-artist">{{ song.artist }}</div>
+    
+    <div class="tag-container">
+        <span class="tag"><i class="fa-solid fa-tag"></i> {{ song.genre }}</span>
+        <span class="tag"><i class="fa-regular fa-calendar"></i> {{ song.release_year }}</span>
+        {% if song.album %}
+            <span class="tag"><i class="fa-solid fa-record-vinyl"></i> {{ song.album }}</span>
+        {% endif %}
+    </div>
+
+    <button class="btn-primary" 
+            style="width: 100%; padding: 15px; border-radius: 50px; font-size: 18px; margin-top: 20px; margin-bottom: 20px;"
+            data-context="single"
+            data-title="{{ song.title }}"
+            data-artist="{{ song.artist }}"
+            data-url="{{ song.audio_file.url }}"
+            onclick="playContext(this)">
+        <i class="fa-solid fa-play"></i> Play Track
+    </button>
+
+    {% if request.user.is_authenticated and user_playlists %}
+    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #333; text-align: left;">
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 10px;">Save to Playlist</p>
+        <form action="{% url 'add_to_playlist' song.id %}" method="POST" style="display: flex; gap: 10px;">
+            {% csrf_token %}
+            <select name="playlist_id" required style="flex: 1; padding: 10px; background: #000; color: white; border: 1px solid #333; border-radius: 4px; outline: none;">
+                <option value="" disabled selected>Select a playlist...</option>
+                {% for playlist in user_playlists %}
+                    <option value="{{ playlist.id }}">{{ playlist.title }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-primary" style="padding: 10px 20px;">Add</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 20px; display: flex; gap: 15px;">
+        <a href="{% url 'share_to_feed' 'song' song.id %}" style="flex: 1;">
+            <button class="btn-outline" style="width: 100%; border-color: #3498db; color: #3498db;">
+                <i class="fa-solid fa-retweet"></i> Share to Feed
+            </button>
+        </a>
+        
+        <a href="{% url 'share_to_chat' 'song' song.id %}" style="flex: 1;">
+            <button class="btn-outline" style="width: 100%; border-color: #9b59b6; color: #9b59b6;">
+                <i class="fa-regular fa-paper-plane"></i> Message
+            </button>
+        </a>
+    </div>
+
+    <div class="uploader-info">
+        Uploaded by <a href="{% url 'profile_view' song.uploader.username %}">{{ song.uploader.username }}</a>
+        <br>
+        <small style="opacity: 0.6;">{{ song.uploaded_at|date:"F d, Y" }}</small>
+    </div>
+</div>
+{% endblock %}
